@@ -1,0 +1,124 @@
+<html>
+<head>
+  <script type="text/javascript" src="/javascripts/prototype-1.6.0.js"></script>
+  <script type="text/javascript" src="/javascripts/scriptaculous-1.8.2.js"></script>
+  <script type="text/javascript" src="/javascripts/xmlobjectifier.js"></script>
+	<script type="text/javascript" src="/javascripts/helpers.js"></script>
+	<script type="text/javascript" src="/javascripts/application.js"></script>
+	
+	<link href="/stylesheets/index.css" rel="stylesheet" type="text/css">
+	
+	<title>Nearby</title>
+	
+	<script type="text/javascript">
+  	
+  	// find the phone's current zip code given a position object
+  	function geolocate(pos) {
+  	  updateProgressBar('Finding zip        ',3)
+      client.onload = function() {
+        var zip = this.responseText.evalJSON().postalCodes.first().postalCode;
+        doSearch(zip);
+      };
+      client.open("GET","http://ws.geonames.org/findNearbyPostalCodesJSON?lat="+pos.coords.latitude+"&lng="+pos.coords.longitude+"&maxRows=1");
+      client.send();
+	  }
+	  
+	  
+	  // do a search on Active.com
+	  function doSearch(zip) {
+	    updateProgressBar('Finding events  ',6)
+      client.onload = function() {
+        updateProgressBar('Parsing events  ',9);
+        var results = XMLObjectifier.xmlToJSON(this.responseText);
+        titles = $A(results.results[0].result).collect(function(result) {
+          return result.title[0].Text.unescape();
+        });
+        removeProgressBar();
+        buildTable(titles);
+      };
+      client.open("GET","http://searchbeta.active.com/search?k=&f=activities&v=xml&m=meta%3AstartDate%3Adaterange%3Atoday..&num=25&l="+zip);
+      client.send();
+    }
+    
+    
+    // Build a table of the titles
+    function buildTable(titles) {
+      Helper.createSubPages(titles);
+  	}
+  	
+  	
+  	// Remove weird characters from any text
+  	function cleanText(text) {
+  	  return text.replace("&#39;","'").replace("&amp;","&");
+	  }
+	  
+	  
+	  // Create a progress bar on the screen
+	  function createProgressBar() {
+	    var flexSpace = Titanium.UI.createButton({
+  			systemButton:Titanium.UI.iPhone.SystemButton.FLEXIBLE_SPACE
+  		});
+  		
+  		var progress = Titanium.UI.createProgressBar({
+  			// id:'content_indicator',
+  			width:150,
+  			min:0,
+  			max:10,
+  			value:1,
+  			message:'Finding location',
+  			color:'#ffffff',
+  			style:Titanium.UI.iPhone.ProgressBarStyle.PLAIN
+  		});
+  		
+  		Titanium.UI.currentWindow.setToolbar([flexSpace,progress,flexSpace]);
+  		
+  		progress.show();
+  		return progress;
+		}
+		
+		
+		function removeProgressBar() {
+		  Titanium.UI.currentWindow.setToolbar(null);
+	  }
+
+
+    // update the progress bar
+    function updateProgressBar(message, value) {
+      progress.setValue(value);
+      progress.setMessage(message);
+    }
+  	
+  	
+  	// show an alert
+  	function createAlert(text) {
+  	  var alert = Titanium.UI.createAlertDialog();
+      alert.setMessage(text);
+      // alert.setTitle('Location Problem');
+      alert.show();
+	  }
+	  
+	</script>
+	
+</head>
+<body>
+  
+  <div id="status"></div>
+  <div id="content_indicator" style="width:200px;margin:5em auto 0;height:50px;font-size:10px"></div>
+  
+  <script type="text/javascript">
+  	var progress = createProgressBar();
+  	var client = Titanium.Network.createHTTPClient();
+
+    // get the current location
+  	Titanium.Geolocation.getCurrentPosition(
+  		function(pos) {   // success
+  		  geolocate(pos);
+  		},
+  		function() {    // failure
+        createAlert('Your location could not be determined!')
+  		}
+  	);
+  </script>
+  
+</body>
+</html>
