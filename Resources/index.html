@@ -1,18 +1,146 @@
 <html>
 <head>
-  <script type="text/javascript" src="/javascripts/prototype-1.6.0.js"></script>
-  <script type="text/javascript" src="/javascripts/scriptaculous-1.8.2.js"></script>
-	<script type="text/javascript" src="/javascripts/helpers.js"></script>
+	<title>Active Search</title>
 	
-	<link href="/stylesheets/index.css" rel="stylesheet" type="text/css">
-	
-	<title>Search</title>
-	
+	<script type="text/javascript" src="javascripts/prototype-1.6.0.js"></script>
 	<script type="text/javascript">
-	  Helper.createSubPages(['Nearby','Running','Cycling','Triathlon'], false)
+  	// some core extensions
+    Object.extend(String.prototype, {
+      parameterize:function() {
+        return this.toLowerCase().gsub(/\W/,'_').gsub(/_+/,'_');
+      },
+      unescape:function() {
+        return this.replace(/&#39;/g,"'").replace(/&amp;/g,"&")
+      },
+      stripHTML:function() {
+        return this.replace(/<.*?>/g,'');
+      }
+    });
+	</script>
+	<script type="text/javascript">
+  	var views = new Array(10);
+  	var loaded = false;
+  	var scrollView;
+  	var activityIndicator = Titanium.UI.createActivityIndicator();
+  	var android = Titanium.Platform.name == 'android';
+  	var compositeView = Titanium.UI.createCompositeView();
+    var client = Titanium.Network.createHTTPClient();
+    
+  	var template = {
+  	  rowHeight:65,
+  		layout:[
+  		  {name:'content', type:'text', left: 10, right: 10, top: 5, height: 20, fontSize: 16},
+  		  {name:'location', type:'text', left: 10, right: 10, top: 25, height: 15, fontSize:12, fontWeight:'normal', color:'#666666'},
+  		  {name:'start_date', type:'text', left:10, right: 10, top: 40, height: 15, fontSize:12, fontWeight:'normal', color:'#aaaaaa'}
+  		]
+  	};
+
+  	var tableView = Titanium.UI.createTableView({
+  		template:template
+  	}, function(ev) {
+  		var webview = Titanium.UI.createWindow({url:ev.rowData.href,barColor:'#003e7e',title:'Loading...'});
+  		webview.open({modal:true});
+  		var closeBtn = Titanium.UI.createButton({
+  			title:'Close',
+  			style:Titanium.UI.iPhone.SystemButtonStyle.BORDERED
+  		});
+  		webview.setLeftNavButton(closeBtn);
+  		closeBtn.addEventListener('click',function()
+  		{
+  			webview.close();
+  		});
+  		var safari = Titanium.UI.createButton({
+  			systemButton:Titanium.UI.iPhone.SystemButton.ACTION
+  		});
+  		safari.addEventListener('click',function()
+  		{
+  			Titanium.Platform.openURL(ev.rowData.href);
+  		});
+  		webview.setRightNavButton(safari);
+  	});
+
+  	function showActivity(showing) {
+  		if (showing) {
+  			// while loading, show the activity indicator
+  			if (android) {
+  				activityIndicator.setMessage('Fetching...');
+  				activityIndicator.show();
+  			}
+  			else {
+  				Titanium.UI.currentWindow.setRightNavButton(activityIndicator);
+  			}
+  		} else {
+  			if (android) {
+  				activityIndicator.hide();
+  			}
+  			else {
+  				Titanium.UI.currentWindow.setRightNavButton(null);
+  			}
+  		}
+  	}
+
+  	function loadData(search) {
+  		// while loading, show the activity indicator
+  		showActivity(true);
+
+      try {
+      	client.onload = function() {
+          var results = this.responseText.evalJSON()._results;
+          if (results.length == 0) {
+            Titanium.UI.createAlertDialog({
+  						'title' : 'Not found',
+  						'message' : 'No events were found for your search, please try again!',
+  						'buttonNames' : 'OK'
+  					}).show();
+  					var events = [];
+          } else {
+            // TODO: add an alert if there are no results found
+            var events = results.collect(function(result) {
+              var date = result.meta.startDate;
+              return {  content:result.title.unescape().stripHTML().split('|').first(), 
+                        href:result.escapedUrl, 
+                        start_date:'Starts: ' + date + ' @ ' + result.meta.startTime + ' ' + result.meta.timezone,
+                        location:(result.meta.location ? result.meta.location.stripHTML() + ' ' : '') + result.meta.city.stripHTML() + ',' + result.meta.state };
+            });
+          }
+          tableView.setData(events);
+          showActivity(false);
+        };
+        client.open("GET","http://searchbeta.active.com/search?k="+search+"&f=activities&v=json&m=meta%3AstartDate%3Adaterange%3Atoday..&num=5");
+        client.send();
+      } catch(e) {
+        Titanium.API.error("error = "+e);
+				showActivity(false);
+      }
+
+  		showActivity(false);
+  	}
+
+  	window.onload = function() {
+  		try {
+  		  
+  		  var search = Titanium.UI.createSearchBar({width:330, showCancel:false});
+    		search.addEventListener('return', function(e) {
+    			search.blur();
+  				Titanium.API.info("Searching Active for: " + search.value);
+  				loadData(search.value);
+    		});
+    		Titanium.UI.currentWindow.setTitleControl(search);
+    		//Titanium.UI.currentWindow.setBarColor('#990000');
+    		
+  			var views = Titanium.UI.currentWindow.getViews();
+  			//compositeView.addView(views[0],{left:0,top:0,height:50});
+  			compositeView.addView(tableView,{top:0,left:0});
+  			Titanium.UI.currentWindow.addView(compositeView);
+  			Titanium.UI.currentWindow.showView(compositeView);
+  		}
+  		catch(E) {
+  			Titanium.API.error("error = "+E);
+  		}
+  	};
 	</script>
 </head>
-<body>
-  
+<body style="font-family:'Helvetica Neue';padding:0;margin:0">
+
 </body>
 </html>

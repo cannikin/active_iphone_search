@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<ti:app xmlns:ti="http://ti.appcelerator.org">
+<?xml version="1.0" encoding="UTF-8"?><ti:app xmlns:ti="http://ti.appcelerator.org">
   <id>com.activenetwork.search</id>
   <name>Search Beta</name>
   <version>1.0</version>
@@ -13,8 +12,9 @@
       <url>index.html</url>
       <backgroundColor>#ffffff</backgroundColor>
       <icon>ti://featured</icon>
-      <barColor>#003e7e</barColor>
+      <!--<barColor>#003e7e</barColor>-->
       <fullscreen>false</fullscreen>
     </window>
   </windows>
+<guid>03b377be715e4ed8857ae84ba9f9a417</guid>
 </ti:app>
