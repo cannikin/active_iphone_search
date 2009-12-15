@@ -38,7 +38,8 @@
   	var tableView = Titanium.UI.createTableView({
   		template:template
   	}, function(ev) {
-  		var webview = Titanium.UI.createWindow({url:ev.rowData.href,barColor:'#003e7e',title:'Loading...'});
+  		// var webview = Titanium.UI.createWindow({url:ev.rowData.href,barColor:'#003e7e',title:'Loading...'});
+  		var webview = Titanium.UI.createWindow({url:ev.rowData.href,title:'Loading...'});
   		webview.open({modal:true});
   		var closeBtn = Titanium.UI.createButton({
   			title:'Close',
@@ -100,7 +101,8 @@
               return {  content:result.title.unescape().stripHTML().split('|').first(), 
                         href:result.escapedUrl, 
                         start_date:'Starts: ' + date + ' @ ' + result.meta.startTime + ' ' + result.meta.timezone,
-                        location:(result.meta.location ? result.meta.location.stripHTML() + ' ' : '') + result.meta.city.stripHTML() + ',' + result.meta.state };
+                        location:(result.meta.location ? result.meta.location.stripHTML() + ' ' : '') + result.meta.city.stripHTML() + ',' + result.meta.state,
+                        hasChild:true };
             });
           }
           tableView.setData(events);
@@ -119,7 +121,7 @@
   	window.onload = function() {
   		try {
   		  
-  		  var search = Titanium.UI.createSearchBar({width:330, showCancel:false});
+  		  var search = Titanium.UI.createSearchBar({width:320, showCancel:false});
     		search.addEventListener('return', function(e) {
     			search.blur();
   				Titanium.API.info("Searching Active for: " + search.value);
